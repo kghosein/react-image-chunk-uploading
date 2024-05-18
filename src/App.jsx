@@ -1,6 +1,6 @@
 import { useState } from "react"
 import "./App.css"
-import { LinearProgress } from "@mui/material"
+import { Button, LinearProgress } from "@mui/material"
 
 const chunkSize = 2 * 1024 * 1024 // 2mb
 
@@ -17,9 +17,11 @@ async function getBase64(file) {
 
 function App() {
   const [isChunkUploading, setIsChunkUploading] = useState(() => false)
-  const [image, setImage] = useState(() => "")
+  const [selectedImage, setSelectedImage] = useState(() => "")
   const [uploadProgress, setUploadProgress] = useState(() => 0)
   const [chunkInfo, setChunkInfo] = useState(() => null)
+  const [uploadedImage, setUploadedImage] = useState(() => "")
+  const [imageFormat, setImageFormat] = useState("base64")
 
   const handleUploadImg = (imageBase64) => {
     try {
@@ -30,11 +32,12 @@ function App() {
       let end = chunkSize
       let counter = 1
       let chunkInfo
+      let myChunks = []
 
       const uploadChunk = () => {
         if (start < imageBase64.length) {
           counter++
-          // const chunk = imageBase64.substring(start, end)
+          const chunk = imageBase64.substring(start, end)
           // your payload
           // const payload = {
           //   image_data: chunk,
@@ -45,23 +48,25 @@ function App() {
             chunkNumber: chunkNumber,
             totalChunks: totalChunks,
           }
+          myChunks.push(chunk)
           setChunkInfo(chunkInfo)
           setUploadProgress(Number((chunkNumber + 1) * chunkProgress))
 
           // handle your api here
           // your api must also support chunk uploading
           // do this in your api success response
-          // simulating api response 
+          // simulating api response
           setTimeout(() => {
             setUploadProgress(Number((chunkNumber + 1) * chunkProgress))
             chunkNumber++
             start = end
             end = chunkSize * counter
             uploadChunk()
-          }, 2000)
+          }, 1200)
         } else {
           setIsChunkUploading(false)
-          setUploadProgress(0)
+          // setUploadProgress(0)
+          setUploadedImage(myChunks.join(""))
         }
       }
 
@@ -72,15 +77,20 @@ function App() {
   }
 
   const handleChange = async (e) => {
+    setSelectedImage("")
+    setUploadProgress(0)
+    setChunkInfo(null)
+    setUploadedImage("")
     const file = e.target.files[0]
 
     if (file) {
       const imageUri = URL.createObjectURL(file)
+      setSelectedImage(imageUri)
 
       await getBase64(file)
         .then((res) => {
           if (file.size < chunkSize) {
-            setImage(imageUri)
+            setIsChunkUploading(false)
           } else {
             setIsChunkUploading(true)
           }
@@ -94,33 +104,55 @@ function App() {
 
   return (
     <div className="container">
-      <input
-        type="file"
-        onChange={(e) => handleChange(e)}
-        onClick={(e) => {
-          e.target.value = null
-        }} // to allow user to select same image multiple times
-      />
-      <div>
-        <h2>Original Image</h2>
-        <img src={image} alt="" />
+      <h2>Image Chunk Uploading</h2>
+      <div className="format-selection">
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => setImageFormat("base64")}
+          disabled={imageFormat === "base64" ? true : false}
+        >
+          base64 format
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => setImageFormat("file")}
+          disabled={imageFormat === "file" ? true : false}
+        >
+          file format
+        </Button>
       </div>
-      <div>
-        {isChunkUploading ? (
-          <>
-            <h2>Uploading image in chunks</h2>
-            <p>
-              Chunks {chunkInfo.chunkNumber}/{chunkInfo.totalChunks}
-            </p>
-            <LinearProgress variant="determinate" value={uploadProgress} />
-          </>
-        ) : (
-          <>
-            <h2>Reconstructed Image</h2>
-            <img src={image} alt="" />
-          </>
-        )}
-      </div>
+      <h3>***{imageFormat} format***</h3>
+      {imageFormat === "base64" && (
+        <>
+          <input
+            type="file"
+            onChange={(e) => handleChange(e)}
+            onClick={(e) => {
+              e.target.value = null
+            }} // to allow user to select same image multiple times
+          />
+          <div className="selected-image">
+            <h2>Selected Image</h2>
+            {selectedImage && <img src={selectedImage} alt="" />}
+          </div>
+          <div className="uploaded-image">
+            <h2>Image(to be) Uploaded</h2>
+            {isChunkUploading && (
+              <p>
+                Chunk Info: {chunkInfo.chunkNumber}/{chunkInfo.totalChunks}
+              </p>
+            )}
+            <div className="upload-progress">
+              <p>Progress</p>
+              <LinearProgress variant="determinate" value={uploadProgress} />
+            </div>
+            {uploadedImage && <img src={uploadedImage} alt="" />}
+          </div>
+        </>
+      )}
+      {imageFormat === "file" && <h2>Will be updated Soon</h2>} 
     </div>
   )
 }

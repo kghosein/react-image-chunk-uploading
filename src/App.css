@@ -5,11 +5,20 @@
 }
 
 img {
-  max-height: 500px;
-  max-width: 500px;
+  max-height: 300px;
+  max-width: 250px;
+  margin-top: 0.5rem;
 }
 
 .container {
   max-width: 500px;
   margin: 2rem auto 0 auto;
+}
+
+.uploaded-image,.selected-image, input {
+  margin-top: 1rem;
+}
+
+.format-selection, .upload-progress {
+  margin-top: 0.5rem;
 }
